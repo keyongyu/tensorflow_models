@@ -1534,18 +1534,12 @@ def random_crop_pad_image(image,
                           labels,
                           label_scores=None,
                           multiclass_scores=None,
-                          #min_object_covered=1.0,
-                          min_object_covered=0.5,
-                          #aspect_ratio_range=(0.75, 1.33),
-                          aspect_ratio_range=(0.75/1.1, 0.75*1.1),
-                          #area_range=(0.1, 1.0),
-                          area_range=(0.3, 1.0),
-                          #overlap_thresh=0.3,
-                          overlap_thresh=0.7,
+                          min_object_covered=1.0,
+                          aspect_ratio_range=(0.75, 1.33),
+                          area_range=(0.1, 1.0),
+                          overlap_thresh=0.3,
                           random_coef=0.0,
                           min_padded_size_ratio=(1.0, 1.0),
-                          #max_padded_size_ratio=(2.0, 2.0),
-                          #max_padded_size_ratio=(1.75, 1.75),
                           max_padded_size_ratio=(2.0, 2.0),
                           pad_color=None,
                           seed=None,
@@ -1612,7 +1606,7 @@ def random_crop_pad_image(image,
   
   rand = random.uniform(0, 1)
 
-  # rand = 0.95
+  #rand = 0.6
 
   crop, pad = False, False
   if rand < 0.3:
@@ -1715,16 +1709,7 @@ def random_crop_pad_image(image,
         preprocess_vars_cache=preprocess_vars_cache)
 
     cropped_padded_output = (padded_image, padded_boxes, labels)
-    index = 3
-    if label_scores is not None:
-      cropped_label_scores = result[index]
-      cropped_padded_output += (cropped_label_scores,)
-      index += 1
 
-    if multiclass_scores is not None:
-      cropped_multiclass_scores = result[index]
-      cropped_padded_output += (cropped_multiclass_scores,)  
-      
   else:
     cropped_padded_output = (image, boxes, labels)
       
@@ -1959,7 +1944,8 @@ def random_pad_image_keep_aspect(image,
       max_image_size[0] > min_image_size[0],
       lambda: _random_integer(min_image_size[0], max_image_size[0], seed),
       lambda: max_image_size[0])
-  scale = image_width *1.0/image_height
+
+  scale = tf.to_float(image_width)/tf.to_float(image_height)
 
   #target_width = tf.cond(
   #    max_image_size[1] > min_image_size[1],
@@ -1969,7 +1955,7 @@ def random_pad_image_keep_aspect(image,
   #target_width = scale * target_height 
   target_width = tf.cond(
       max_image_size[1] > min_image_size[1],
-      scale * target_height,
+      lambda: tf.to_int32(scale * tf.to_float(target_height)),
       lambda: max_image_size[1])
 
 

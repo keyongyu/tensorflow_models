@@ -152,7 +152,11 @@ if __name__ == '__main__':
     if args.out_folder is None:
         out_folder = abspath(args.input_folder + "_resized")
     else:
-        out_folder = abspath(args.out_folder)
+        if not args.out_folder.endswith("/"):
+            out_folder = abspath(args.out_folder)
+        else:
+            out_folder = abspath(args.out_folder[0:-1])
+
     print("new dataset saved to ", out_folder)
 
     try:
