@@ -343,6 +343,42 @@ def prune_non_overlapping_boxes(
     return new_boxlist1, keep_inds
 
 
+####################################################################
+def prune_non_overlapping_boxes_custom(
+    boxlist1, boxlist2, min_overlap=0.0, scope=None):
+  """Prunes the boxes in boxlist1 that overlap less than thresh with boxlist2.
+
+  For each box in boxlist1, we want its IOA to be more than minoverlap with
+  at least one of the boxes in boxlist2. If it does not, we remove it.
+
+  Args:
+    boxlist1: BoxList holding N boxes.
+    boxlist2: BoxList holding M boxes.
+    min_overlap: Minimum required overlap between boxes, to count them as
+                overlapping.
+    scope: name scope.
+
+  Returns:
+    new_boxlist1: A pruned boxlist with size [N', 4].
+    keep_inds: A tensor with shape [N'] indexing kept bounding boxes in the
+      first input BoxList `boxlist1`.
+    black_boxblist: A boxlist with size [N', 4] that are culled
+  """
+  with tf.name_scope(scope, 'PruneNonOverlappingBoxes'):
+    ioa_ = ioa(boxlist2, boxlist1)  # [M, N] tensor
+    ioa_ = tf.reduce_max(ioa_, reduction_indices=[0])  # [N] tensor
+    keep_bool = tf.greater_equal(ioa_, tf.constant(min_overlap))
+    keep_inds = tf.squeeze(tf.where(keep_bool), squeeze_dims=[1])
+    new_boxlist1 = gather(boxlist1, keep_inds)
+    #return new_boxlist1, keep_inds
+
+    blackbox_bool = tf.less(ioa_, tf.constant(min_overlap))
+    blackbox_inds = tf.squeeze(tf.where(blackbox_bool), squeeze_dims=[1])
+    black_boxlist = gather(boxlist1, blackbox_inds)
+    return new_boxlist1, keep_inds, black_boxlist
+####################################################################
+
+
 def prune_small_boxes(boxlist, min_side, scope=None):
   """Prunes small boxes in the boxlist which have a side smaller than min_side.
 
