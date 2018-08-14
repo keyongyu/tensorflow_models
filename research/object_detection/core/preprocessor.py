@@ -1611,7 +1611,7 @@ def random_crop_pad_image(image,
   crop, pad = False, False
   if rand < 0.3:
   	crop = True
-  elif rand < 0.7:
+  elif rand < 0.75:
   	pad = True
   elif rand < 0.90:
   	crop = True
@@ -1621,6 +1621,7 @@ def random_crop_pad_image(image,
   image_size = tf.shape(image)
   image_height = image_size[0]
   image_width = image_size[1]
+
   if crop and pad:
     result = random_crop_image(
         image=image,
@@ -1932,6 +1933,16 @@ def random_pad_image_keep_aspect(image,
 
   if max_image_size is None:
     max_image_size = tf.stack([image_height * 2, image_width * 2])
+
+  max_image_size = tf.cond(
+     tf.logical_or(tf.greater(image_height, 1200),
+                   tf.greater(image_width ,900)),
+     lambda:  tf.stack([
+        image_height*tf.constant(5)/tf.constant(4),
+        image_width*tf.constant(5)/tf.constant(4)
+        ]),
+     lambda:  max_image_size)
+                        
   max_image_size = tf.maximum(max_image_size,
                               tf.stack([image_height, image_width]))
 
