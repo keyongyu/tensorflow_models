@@ -1974,6 +1974,11 @@ def random_pad_image_keep_aspect(image,
       lambda: max_image_size[1],
       lambda: target_width)
 
+  target_width = tf.cond(
+      target_width < image_width,
+      lambda: image_width,
+      lambda: target_width)
+
   offset_height = tf.cond(
       target_height > image_height,
       lambda: _random_integer(0, target_height - image_height, seed),
