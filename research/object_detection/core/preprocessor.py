@@ -67,7 +67,8 @@ import functools
 import inspect
 import sys
 import tensorflow as tf
-import random
+#import random
+import numpy as np
 from tensorflow.python.ops import control_flow_ops
 
 from object_detection.core import box_list
@@ -1604,25 +1605,27 @@ def random_crop_pad_image(image,
 
   """
   
-  rand = random.uniform(0, 1)
+  #rand = random.uniform(0, 1)
+  #rand = np.random.uniform(0, 1)
+  #sys.stderr.write(">>>rand=%f<<<<\n"%(rand))
 
-  #rand = 0.6
+  #rand = 0.2
 
-  crop, pad = False, False
-  if rand < 0.3:
-  	crop = True
-  elif rand < 0.75:
-  	pad = True
-  elif rand < 0.90:
-  	crop = True
-  	pad = True
+  #crop, pad = False, False
+  #if rand < 0.3:
+  # 	crop = True
+  #elif rand < 0.75:
+  #	pad = True
+  #elif rand < 0.90:
+  #	crop = True
+  #	pad = True
 
 
   image_size = tf.shape(image)
   image_height = image_size[0]
   image_width = image_size[1]
 
-  if crop and pad:
+  def do_crop_pad():
     result = random_crop_image(
         image=image,
         boxes=boxes,
@@ -1665,7 +1668,9 @@ def random_crop_pad_image(image,
     if multiclass_scores is not None:
       cropped_multiclass_scores = result[index]
       cropped_padded_output += (cropped_multiclass_scores,)
-  elif crop:
+    return cropped_padded_output
+
+  def do_crop():
     result = random_crop_image(
         image=image,
         boxes=boxes,
@@ -1692,7 +1697,9 @@ def random_crop_pad_image(image,
     if multiclass_scores is not None:
       cropped_multiclass_scores = result[index]
       cropped_padded_output += (cropped_multiclass_scores,)  
-  elif pad:
+    return cropped_padded_output
+
+  def do_pad():
     min_image_size = tf.to_int32(
         tf.to_float(tf.stack([image_height, image_width])) *
         min_padded_size_ratio)
@@ -1710,12 +1717,33 @@ def random_crop_pad_image(image,
         preprocess_vars_cache=preprocess_vars_cache)
 
     cropped_padded_output = (padded_image, padded_boxes, labels)
+    return cropped_padded_output
 
-  else:
+  def do_original():
     cropped_padded_output = (image, boxes, labels)
-      
-  return cropped_padded_output
+    return cropped_padded_output
 
+  rand=tf.random_uniform([],0,1)
+  #if rand < 0.3:
+  # 	crop = True
+  #elif rand < 0.75:
+  #	pad = True
+  #elif rand < 0.90:
+  #	crop = True
+  #	pad = True
+
+  #return tf.case({
+  #          tf.less(rand,tf.constant(0.3)):do_crop, 
+  #          tf.less(rand,tf.constant(0.7)):do_pad, 
+  #          tf.less(rand,tf.constant(0.9)):do_crop_pad
+  #        },
+  #       default=do_original,exclusive=True)
+  return tf.cond(rand<tf.constant(0.3),
+          do_crop,
+          lambda: tf.cond(rand<tf.constant(0.7),
+                          do_pad,
+                          lambda: tf.cond(rand<tf.constant(0.9),do_crop_pad,do_original))
+          )
 
 def random_crop_to_aspect_ratio(image,
                                 boxes,
