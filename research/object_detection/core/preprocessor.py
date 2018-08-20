@@ -1641,6 +1641,10 @@ def random_crop_pad_image(image,
         preprocess_vars_cache=preprocess_vars_cache)
 
     cropped_image, cropped_boxes, cropped_labels = result[:3]
+    image_size = tf.shape(cropped_image)
+    image_height = image_size[0]
+    image_width = image_size[1]
+
 
     min_image_size = tf.to_int32(
         tf.to_float(tf.stack([image_height, image_width])) *
