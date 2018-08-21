@@ -162,7 +162,7 @@ if __name__ == '__main__':
         else:
             out_folder = abspath(args.out_folder[0:-1])
 
-    print("new dataset saved to ", out_folder)
+    print("new dataset saved to {}", out_folder)
 
     try:
         print("Attempting to copy folder.")
