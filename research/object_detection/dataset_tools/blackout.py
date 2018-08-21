@@ -153,7 +153,7 @@ if __name__ == '__main__':
     input_folder = abspath(args.input_folder)
     if args.out_folder is None:
         out_folder = args.input_folder
-        if out_folder.endswith(os.pathsep):
+        if out_folder.endswith(os.sep):
             out_folder = out_folder[0:-1]
         out_folder = abspath(out_folder+ "_resized")
     else:
