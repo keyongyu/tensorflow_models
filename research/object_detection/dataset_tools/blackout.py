@@ -3,9 +3,11 @@ import cv2
 import json
 from shutil import copytree
 import os
+import sys
 import fnmatch
 from os.path import abspath, join, splitext, basename
 import numpy as np
+from multiprocessing.pool import ThreadPool
 
 parser = argparse.ArgumentParser()
 
@@ -170,10 +172,8 @@ if __name__ == '__main__':
     # find the photo files and annotation files
     files = find_files(out_folder)
     total = len(files)
-    counter = 0
-    print("Start iterating over files. Total files: {}".format(total))
-    for (photo_path, json_path) in files:
 
+    def worker(photo_path, json_path):
         try:
             image = cv2.imread(photo_path)
         except:
@@ -184,10 +184,25 @@ if __name__ == '__main__':
 
         black_out_one(json_data, image)
         resize_json_image(json_data, image, json_path, photo_path)
+        image = None
 
-        counter += 1
-        progress = counter*1.0 / total
-        done = int(progress * 100)
-        if counter % 20 == 0:
-            print("{}% Completed: {}/{}".format(done, counter, total))
-    print("End")
+    results = []
+    pool = ThreadPool(8)
+    counter = 0
+    print("Start iterating over files. Total files: {}".format(total))
+    for (photo_path, json_path) in files:
+        results.append(pool.apply_async(worker, args=("" + photo_path, json_path)))
+
+        #if counter % 20 == 0:
+        #    print("{}% Completed: {}/{}".format(done, counter, total))
+    percentage = -1
+    for idx, ret in enumerate(results):
+        ret.get()
+        current_perc = idx * 100 // len(results)
+        if current_perc != percentage:
+            sys.stdout.write("\r%d%% images has been processed" % (current_perc))
+            sys.stdout.flush()
+            percentage = current_perc
+
+    print("\nEnd")
+
