@@ -152,9 +152,12 @@ def black_out_one(json_data, image):
 if __name__ == '__main__':
     input_folder = abspath(args.input_folder)
     if args.out_folder is None:
-        out_folder = abspath(args.input_folder + "_resized")
+        out_folder = args.input_folder
+        if out_folder.endswith(os.pathsep):
+            out_folder = out_folder[0:-1]
+        out_folder = abspath(out_folder+ "_resized")
     else:
-        if not args.out_folder.endswith("/"):
+        if not args.out_folder.endswith(os.pathsep):
             out_folder = abspath(args.out_folder)
         else:
             out_folder = abspath(args.out_folder[0:-1])
