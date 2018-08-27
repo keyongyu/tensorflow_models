@@ -20,7 +20,8 @@ from __future__ import print_function
 
 import functools
 import os
-
+import matplotlib;
+matplotlib.use('Agg')
 import tensorflow as tf
 
 from object_detection import eval_util
