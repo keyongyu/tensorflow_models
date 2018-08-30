@@ -127,6 +127,8 @@ def json_to_tf_example(json_data,
     difficult_obj = []
 
     for obj in json_data.get("bndboxes"):
+        if obj.get("id") == "nil":
+            continue
         difficult_obj.append(0)
         xmin.append(float(obj.get("x")) / width)
         ymin.append(float(obj.get("y")) / height)
