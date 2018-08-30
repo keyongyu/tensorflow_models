@@ -64,6 +64,53 @@ def run_inference_for_single_image(image, graph):
             output_dict['detection_scores'] = output_dict['detection_scores'][0]
             return output_dict
 
+def batch_iou(boxes, box):
+  """Compute the Intersection-Over-Union of a batch of boxes with another
+  box.
+
+  Args:
+    box1: 2D array of [l, t, r, b].
+    box2: a single array of [l, t, r, b]
+  Returns:
+    ious: array of a float number in range [0, 1].
+  """
+  lr = np.maximum(
+      np.minimum(boxes[:,2], box[2]) - \
+      np.maximum(boxes[:,0], box[0]),
+      0
+  )
+  tb = np.maximum(
+      np.minimum(boxes[:,3], box[3]) - \
+      np.maximum(boxes[:,1], box[1]),
+      0
+  )
+  inter = lr*tb
+  union = (boxes[:,2]-boxes[:,0])*(boxes[:,3]-boxes[:,1]) + \
+          (box[2]-box[0])*(box[3]-box[1]) - inter
+  return inter/union
+
+def nms(boxes, probs, threshold):
+  """Non-Maximum supression.
+  Args:
+    boxes: array of [x, y, x2, y2] (l,b,r,t)format
+    probs: array of probabilities
+    threshold: two boxes are considered overlapping if their IOU is largher than
+        this threshold
+    form: 'center' or 'diagonal'
+  Returns:
+    keep: array of True or False.
+  """
+  boxes=np.array(boxes)
+  probs=np.array(probs)
+  order = probs.argsort()[::-1]
+  keep = [True]*len(order)
+
+  for i in range(len(order)-1):
+    ovps = batch_iou(boxes[order[i+1:]], boxes[order[i]])
+    for j, ov in enumerate(ovps):
+      if ov > threshold:
+        keep[order[j+i+1]] = False
+  return keep
 
 if __name__ == '__main__':
     input_folder = abspath(args.np_dataset)
@@ -100,6 +147,16 @@ if __name__ == '__main__':
         boxes  = output_dict['detection_boxes'].tolist()
         classes= output_dict['detection_classes'].tolist()
         scores = output_dict['detection_scores'].tolist()
+        idx = 0
+        for idx , score in enumerate(scores):
+            if score < 0.3:
+                break
+        boxes=boxes[0:idx+1]
+        classes=classes[0:idx+1]
+        scores=scores[0:idx+1]
+
+        keeps=nms(boxes,scores,0.45)
+
         w = img.shape[1]
         h = img.shape[0]
         with open(os.path.join(output_folder,basename+".json"),"wb") as output_fp:
@@ -113,8 +170,8 @@ if __name__ == '__main__':
     "bndboxes": [
 """%(basename, w,h))
             str=""
-            for box, c ,score in zip(boxes,classes,scores):
-                if score < 0.4:
+            for box, c ,score, keep in zip(boxes,classes,scores,keeps):
+                if score < 0.4 or not keep:
                     continue
 
                 ymin, xmin, ymax, xmax = box
