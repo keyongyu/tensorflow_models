@@ -109,16 +109,33 @@ def resize_json_image(json_data, image, json_path, photo_file):
         new_h = int(new_w * 1.0 / w * h)
 
     k_resize = min(1.0, new_h * 1.0 / h)
-    new_w = w*k_resize
-    new_h = h*k_resize
-    json_data["image_width"] = new_w
-    json_data["image_height"] = new_h
+    new_w = int(w*k_resize)
+    new_h = int(h*k_resize)
+    #json_data["image_width"] = new_w
+    #json_data["image_height"] = new_h
     for i in range(len(json_data["bndboxes"])):
         json_data["bndboxes"][i]["x"] = int(json_data["bndboxes"][i]["x"] * k_resize)
         json_data["bndboxes"][i]["y"] = int(json_data["bndboxes"][i]["y"] * k_resize)
         json_data["bndboxes"][i]["w"] = int(json_data["bndboxes"][i]["w"] * k_resize)
         json_data["bndboxes"][i]["h"] = int(json_data["bndboxes"][i]["h"] * k_resize)
-    image = cv2.resize(image, (int(new_w), int(new_h)), interpolation=cv2.INTER_AREA)
+    image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    aspect_ratio= new_w*1.0/new_h
+     
+    if aspect_ratio-0.75 > 0.05:
+        #too fat
+        new_h2=int(new_w * 4 / 3)
+        image = cv2.copyMakeBorder(image, 0, new_h2 - new_h, 0, 0, cv2.BORDER_CONSTANT, value=[0,0,0])
+        new_h=new_h2
+
+    if aspect_ratio -0.75 < - 0.05:
+        #too narrow
+        new_w2 = int(new_h * 3 / 4)
+        image = cv2.copyMakeBorder(image, 0, 0, 0, new_w2 - new_w, cv2.BORDER_CONSTANT, value=[0,0,0])
+        new_w=new_w2
+
+    json_data["image_width"] = new_w
+    json_data["image_height"] = new_h
 
     WRITE = True
     if WRITE:
