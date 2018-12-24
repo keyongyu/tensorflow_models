@@ -28,6 +28,34 @@ import tensorflow as tf
 from object_detection.utils import ops
 slim = tf.contrib.slim
 
+def _conv2d(inputs,
+           filters,
+           kernel_size,
+           strides=(1, 1),
+           kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+           bias_initializer=tf.zeros_initializer(),
+           kernel_regularizer=tf.contrib.layers.l2_regularizer(scale=0.0002),
+           name=None):
+  return tf.layers.conv2d(
+      inputs,
+      filters,
+      kernel_size,
+      strides,
+      kernel_initializer=kernel_initializer,
+      bias_initializer=bias_initializer,
+      kernel_regularizer=kernel_regularizer,
+      activation=tf.nn.relu,
+      name=name,
+      padding="same")
+
+
+def _fire_module(inputs, squeeze_depth, expand_depth, name):
+  """Fire module: squeeze input filters, then apply spatial convolutions."""
+  with tf.variable_scope(name, "fire", [inputs]):
+    squeezed = _conv2d(inputs, squeeze_depth, [1, 1], name="squeeze")
+    e1x1 = _conv2d(squeezed, expand_depth, [1, 1], name="e1x1")
+    e3x3 = _conv2d(squeezed, expand_depth, [3, 3], name="e3x3")
+    return tf.concat([e1x1, e3x3], axis=3)
 
 def get_depth_fn(depth_multiplier, min_depth):
   """Builds a callable to compute depth (output channels) of conv filters.
@@ -129,8 +157,34 @@ def multi_resolution_feature_maps(feature_map_layout, depth_multiplier,
       conv_kernel_size = feature_map_layout['conv_kernel_size'][index]
     if from_layer:
       feature_map = image_features[from_layer]
+      if from_layer in feature_map_keys:
+          from_layer = from_layer + "__"
       base_from_layer = from_layer
-      feature_map_keys.append(from_layer)
+      if index in [0,1]:
+          layer_name = '{}_2_Conv2d_{}_{}x{}_s2_{}'.format(
+            base_from_layer, index, conv_kernel_size, conv_kernel_size,
+            depth_fn(layer_depth))
+          #fire10 = _fire_module(from_layer, 96, 384, 'fire10')
+          #fire11 = _fire_module(fire10,     96, 384, 'fire11')
+          #feature_map_keys.append(fire11)
+          feature_map = slim.separable_conv2d(
+              feature_map,
+              None, [conv_kernel_size, conv_kernel_size],
+              depth_multiplier=1,
+              padding='SAME',
+              stride=1,
+              scope=layer_name + '_depthwise')
+          feature_map = slim.conv2d(
+              feature_map,
+              depth_fn(layer_depth), [1, 1],
+              padding='SAME',
+              stride=1,
+              scope=layer_name)
+          feature_map_keys.append(layer_name)
+      else:
+          feature_map_keys.append(from_layer)
+
+      #feature_map_keys.append(from_layer)
     else:
       pre_layer = feature_maps[-1]
       intermediate_layer = pre_layer

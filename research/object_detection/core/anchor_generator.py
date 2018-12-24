@@ -142,6 +142,7 @@ class AnchorGenerator(object):
     actual_num_anchors = 0
     for num_anchors_per_location, feature_map_shape, anchors in zip(
         self.num_anchors_per_location(), feature_map_shape_list, anchors_list):
+      print('num_anchors_per_location, feature_map_shape.shape',(num_anchors_per_location, feature_map_shape))
       expected_num_anchors += (num_anchors_per_location
                                * feature_map_shape[0]
                                * feature_map_shape[1])

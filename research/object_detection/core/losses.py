@@ -264,12 +264,12 @@ class SigmoidFocalClassificationLoss(Loss):
           ops.indices_to_dense_vector(class_indices,
                                       tf.shape(prediction_tensor)[2]),
           [1, 1, -1])
-    #per_entry_cross_ent = (tf.nn.sigmoid_cross_entropy_with_logits(
-    #    labels=target_tensor, logits=prediction_tensor))
-    #prediction_probabilities = tf.sigmoid(prediction_tensor)
+    per_entry_cross_ent = (tf.nn.sigmoid_cross_entropy_with_logits(
+        labels=target_tensor, logits=prediction_tensor))
+    prediction_probabilities = tf.sigmoid(prediction_tensor)
 
-    per_entry_cross_ent = - target_tensor * tf.nn.log_softmax(prediction_tensor) 
-    prediction_probabilities = tf.nn.softmax(prediction_tensor) 
+    #per_entry_cross_ent = - target_tensor * tf.nn.log_softmax(prediction_tensor) 
+    #prediction_probabilities = tf.nn.softmax(prediction_tensor) 
 
     p_t = ((target_tensor * prediction_probabilities) +
            ((1 - target_tensor) * (1 - prediction_probabilities)))
